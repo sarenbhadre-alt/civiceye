@@ -1,0 +1,476 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CivicEye | Community Reports</title>
+
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    >
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 40px 7%;
+            background: #080d1a;
+            color: #e8eefb;
+            font-family: Arial, sans-serif;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 35px;
+        }
+
+        .logo {
+            color: #4da6ff;
+            font-size: 25px;
+            font-weight: bold;
+        }
+
+        a {
+            color: #4da6ff;
+            text-decoration: none;
+        }
+
+        .back {
+            border: 1px solid #29466b;
+            padding: 11px 18px;
+            border-radius: 8px;
+        }
+
+        h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #91a2bd;
+            margin-bottom: 30px;
+        }
+
+        .map-section {
+            background: #111b30;
+            border: 1px solid #243957;
+            border-radius: 14px;
+            padding: 25px;
+            margin-bottom: 35px;
+        }
+
+        .map-section h2 {
+            color: #4da6ff;
+            margin-top: 0;
+        }
+
+        .map-description {
+            color: #91a2bd;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        #communityMap {
+            width: 100%;
+            height: 450px;
+            border-radius: 10px;
+            border: 1px solid #29466b;
+            z-index: 1;
+        }
+
+        .map-count {
+            color: #aab8ce;
+            font-size: 14px;
+            margin-top: 15px;
+        }
+
+        .map-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            margin-top: 18px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #aab8ce;
+            font-size: 13px;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .report {
+            background: #111b30;
+            border: 1px solid #243957;
+            border-radius: 14px;
+            padding: 25px;
+            margin: 22px 0;
+        }
+
+        .report h2 {
+            color: #4da6ff;
+            margin-top: 0;
+        }
+
+        .details {
+            color: #aab8ce;
+            line-height: 1.7;
+        }
+
+        .status {
+            display: inline-block;
+            background: #1c3555;
+            color: #ffd477;
+            padding: 7px 12px;
+            border-radius: 7px;
+            font-weight: bold;
+        }
+
+        .report-image {
+            width: 100%;
+            max-width: 420px;
+            max-height: 280px;
+            object-fit: cover;
+            display: block;
+            margin-top: 18px;
+            border-radius: 10px;
+            border: 1px solid #29466b;
+        }
+
+        .view-button {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 20px;
+            background: #267de8;
+            color: white;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .view-button:hover {
+            background: #4398ff;
+            transform: translateY(-2px);
+        }
+
+        .empty {
+            background: #111b30;
+            border: 1px solid #243957;
+            border-radius: 12px;
+            padding: 25px;
+            color: #aab8ce;
+        }
+
+        .popup-title {
+            color: #1769bd;
+            font-weight: bold;
+            font-size: 15px;
+            margin-bottom: 7px;
+        }
+
+        .popup-text {
+            color: #333;
+            margin: 5px 0;
+        }
+
+        .popup-link {
+            display: inline-block;
+            margin-top: 8px;
+            color: #1769bd;
+            font-weight: bold;
+        }
+
+        .custom-marker {
+            background: transparent;
+            border: none;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 25px 5%;
+            }
+
+            header {
+                gap: 15px;
+                flex-wrap: wrap;
+            }
+
+            h1 {
+                font-size: 29px;
+            }
+
+            #communityMap {
+                height: 350px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <div class="logo">CivicEye.</div>
+    <a href="/" class="back">← Back to Home</a>
+</header>
+
+<h1>Community Reports</h1>
+
+<p class="subtitle">
+    Track civic issues reported by your community.
+</p>
+
+<!-- COMMUNITY ISSUE MAP -->
+
+<div class="map-section">
+
+    <h2>Community Issue Map</h2>
+
+    <p class="map-description">
+        Explore civic issues reported across your community.
+        Different colours represent different issue categories.
+        Click a marker to view report information.
+    </p>
+
+    <div id="communityMap"></div>
+
+    <p class="map-count">
+        <span id="mapCount">0</span> GPS-enabled reports displayed on the map.
+    </p>
+
+    <!-- MAP LEGEND -->
+
+    <div class="map-legend">
+
+        <div class="legend-item">
+            <span class="legend-dot" style="background:#ff4d4d;"></span>
+            Road Damage
+        </div>
+
+        <div class="legend-item">
+            <span class="legend-dot" style="background:#39d98a;"></span>
+            Waste Management
+        </div>
+
+        <div class="legend-item">
+            <span class="legend-dot" style="background:#ffd447;"></span>
+            Street Lighting
+        </div>
+
+        <div class="legend-item">
+            <span class="legend-dot" style="background:#38bdf8;"></span>
+            Water Supply
+        </div>
+
+        <div class="legend-item">
+            <span class="legend-dot" style="background:#a78bfa;"></span>
+            Drainage
+        </div>
+
+        <div class="legend-item">
+            <span class="legend-dot" style="background:#ffffff;"></span>
+            Other
+        </div>
+
+    </div>
+
+</div>
+
+<!-- REPORT CARDS -->
+
+{% for report in reports %}
+
+<div class="report">
+
+    <h2>{{ report.title }}</h2>
+
+    <div class="details">
+        <p><strong>Category:</strong> {{ report.category }}</p>
+
+        <p><strong>Location:</strong> {{ report.location }}</p>
+
+        <p><strong>Description:</strong> {{ report.description }}</p>
+
+        <p><strong>Report ID:</strong> #{{ report.id }}</p>
+    </div>
+
+    <p class="status">
+        Status: {{ report.status }}
+    </p>
+
+    {% if report.image %}
+        <img
+            class="report-image"
+            src="{{ url_for('static', filename='uploads/' + report.image) }}"
+            alt="Image submitted with {{ report.title }}"
+        >
+    {% endif %}
+
+    <a
+        href="{{ url_for('report_details', report_id=report.id) }}"
+        class="view-button"
+    >
+        View Details →
+    </a>
+
+</div>
+
+{% else %}
+
+<div class="empty">
+    No reports have been submitted yet.
+</div>
+
+{% endfor %}
+
+<!-- MAP FUNCTIONALITY -->
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+
+    // GPS-enabled reports supplied by Flask
+    const reports = {{ map_reports | tojson }};
+
+    const validReports = reports.filter(report =>
+        report.latitude !== null &&
+        report.longitude !== null
+    );
+
+    // Default map position
+    const defaultCenter = [20.5937, 78.9629];
+
+    const map = L.map("communityMap").setView(defaultCenter, 5);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+
+    // CATEGORY COLOURS
+
+    const categoryColors = {
+        "Road Damage": "#ff4d4d",
+        "Waste Management": "#39d98a",
+        "Street Lighting": "#ffd447",
+        "Water Supply": "#38bdf8",
+        "Drainage": "#a78bfa",
+        "Other": "#ffffff"
+    };
+
+
+    // CREATE COLOUR-CODED MARKERS
+
+    const markers = [];
+
+    validReports.forEach(report => {
+
+        const markerColor =
+            categoryColors[report.category] || "#ffffff";
+
+        const markerIcon = L.divIcon({
+            className: "custom-marker",
+
+            html: `
+                <div style="
+                    background-color: ${markerColor};
+                    width: 18px;
+                    height: 18px;
+                    border: 3px solid white;
+                    border-radius: 50%;
+                    box-shadow: 0 0 10px ${markerColor};
+                "></div>
+            `,
+
+            iconSize: [18, 18],
+            iconAnchor: [9, 9]
+        });
+
+        const marker = L.marker(
+            [report.latitude, report.longitude],
+            { icon: markerIcon }
+        ).addTo(map);
+
+
+        // MARKER POPUP
+
+        const popup = `
+            <div class="popup-title">
+                ${escapeHTML(report.title)}
+            </div>
+
+            <p class="popup-text">
+                <strong>Category:</strong>
+                ${escapeHTML(report.category)}
+            </p>
+
+            <p class="popup-text">
+                <strong>Location:</strong>
+                ${escapeHTML(report.location)}
+            </p>
+
+            <p class="popup-text">
+                <strong>Status:</strong>
+                ${escapeHTML(report.status)}
+            </p>
+
+            <a class="popup-link" href="/report/${report.id}">
+                View Full Report →
+            </a>
+        `;
+
+        marker.bindPopup(popup);
+
+        markers.push(marker);
+
+    });
+
+
+    // UPDATE REPORT COUNT
+
+    document.getElementById("mapCount").textContent =
+        markers.length;
+
+
+    // ZOOM TO SHOW ALL MARKERS
+
+    if (markers.length > 0) {
+
+        const markerGroup = L.featureGroup(markers);
+
+        map.fitBounds(markerGroup.getBounds().pad(0.2));
+
+    }
+
+
+    // SAFELY DISPLAY TEXT IN POPUPS
+
+    function escapeHTML(value) {
+
+        return String(value ?? "").replace(/[&<>"']/g, character => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#039;"
+        })[character]);
+
+    }
+
+</script>
+
+</body>
+</html>

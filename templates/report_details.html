@@ -1,0 +1,235 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CivicEye | Report Details</title>
+
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    >
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 40px 7%;
+            background: #080f1e;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            max-width: 850px;
+            margin: 40px auto;
+            background: #111c30;
+            border: 1px solid #243653;
+            border-radius: 16px;
+            padding: 35px;
+        }
+
+        .top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .back {
+            color: #65a8ff;
+            text-decoration: none;
+        }
+
+        .back:hover {
+            color: #ffffff;
+        }
+
+        h1 {
+            font-size: 30px;
+            margin-bottom: 15px;
+        }
+
+        .report-id {
+            color: #8fa4c3;
+            font-size: 14px;
+        }
+
+        .details {
+            margin-top: 30px;
+        }
+
+        .detail {
+            margin-bottom: 22px;
+        }
+
+        .detail strong {
+            display: block;
+            color: #65a8ff;
+            margin-bottom: 8px;
+        }
+
+        .detail p {
+            color: #d2dced;
+            line-height: 1.7;
+            margin: 0;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 8px 15px;
+            border-radius: 20px;
+            background: #203b60;
+            color: #8fc0ff;
+            font-size: 14px;
+        }
+
+        .report-image {
+            width: 100%;
+            max-height: 450px;
+            object-fit: contain;
+            background: #080f1e;
+            border-radius: 12px;
+            margin-top: 10px;
+        }
+
+        .no-image {
+            color: #8fa4c3;
+            font-size: 14px;
+        }
+
+        #reportMap {
+            width: 100%;
+            height: 350px;
+            border-radius: 12px;
+            border: 1px solid #243653;
+            margin-top: 12px;
+            z-index: 1;
+        }
+
+        .coordinates {
+            color: #8fa4c3;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 20px 5%;
+            }
+
+            .container {
+                padding: 22px;
+                margin: 20px auto;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <div class="top">
+            <a href="/reports" class="back">← Back to Community Reports</a>
+            <span class="report-id">Report #{{ report.id }}</span>
+        </div>
+
+        <h1>{{ report.title }}</h1>
+
+        <div class="status">
+            {{ report.status }}
+        </div>
+
+        <div class="details">
+
+            <div class="detail">
+                <strong>Category</strong>
+                <p>{{ report.category }}</p>
+            </div>
+
+            <div class="detail">
+                <strong>Location</strong>
+                <p>{{ report.location }}</p>
+            </div>
+
+            <div class="detail">
+                <strong>Exact GPS Location</strong>
+
+                {% if report.latitude is not none and report.longitude is not none %}
+
+                    <div id="reportMap"></div>
+
+                    <p class="coordinates">
+                        Latitude: {{ report.latitude }} |
+                        Longitude: {{ report.longitude }}
+                    </p>
+
+                {% else %}
+
+                    <p class="no-image">
+                        GPS location was not recorded for this report.
+                    </p>
+
+                {% endif %}
+            </div>
+
+            <div class="detail">
+                <strong>Description</strong>
+                <p>{{ report.description }}</p>
+            </div>
+
+            <div class="detail">
+                <strong>Uploaded Image</strong>
+
+                {% if report.image %}
+                    <img
+                        src="{{ url_for('static', filename='uploads/' + report.image) }}"
+                        alt="Image attached to this report"
+                        class="report-image"
+                    >
+                {% else %}
+                    <p class="no-image">No image was uploaded for this report.</p>
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    {% if report.latitude is not none and report.longitude is not none %}
+    <script>
+        const latitude = {{ report.latitude | tojson }};
+        const longitude = {{ report.longitude | tojson }};
+
+        const map = L.map("reportMap").setView(
+            [latitude, longitude],
+            16
+        );
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        L.marker([latitude, longitude])
+            .addTo(map)
+            .bindPopup("{{ report.title | e }}")
+            .openPopup();
+    </script>
+    {% endif %}
+
+</body>
+</html>

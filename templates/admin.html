@@ -1,0 +1,397 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CivicEye | Admin Dashboard</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 40px 7%;
+            background: #080d1a;
+            color: #e8eefb;
+            font-family: Arial, sans-serif;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 45px;
+        }
+
+        .logo {
+            color: #4da6ff;
+            font-size: 25px;
+            font-weight: bold;
+        }
+
+        a {
+            color: #4da6ff;
+            text-decoration: none;
+        }
+
+        .back {
+            border: 1px solid #29466b;
+            padding: 11px 18px;
+            border-radius: 8px;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 36px;
+        }
+
+        .subtitle {
+            color: #91a2bd;
+        }
+
+        .report {
+            background: #111b30;
+            border: 1px solid #243957;
+            border-radius: 14px;
+            padding: 25px;
+            margin-top: 22px;
+        }
+
+        .report h2 {
+            margin-top: 0;
+            color: #4da6ff;
+        }
+
+        .details {
+            color: #aab8ce;
+            line-height: 1.7;
+        }
+
+        .status {
+            color: #ffd477;
+            font-weight: bold;
+        }
+
+        select, button {
+            padding: 10px;
+            border-radius: 7px;
+            border: 1px solid #29466b;
+            margin-top: 12px;
+        }
+
+        select {
+            background: #080d1a;
+            color: white;
+        }
+
+        button {
+            background: #268cff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #0875e8;
+        }
+
+        .logout-button {
+            background: #26364f;
+            border: 1px solid #456080;
+        }
+
+        .logout-button:hover {
+            background: #354b69;
+        }
+
+        .delete-button {
+            background: #a83242;
+            margin-left: 8px;
+        }
+
+        .delete-button:hover {
+            background: #d12e43;
+        }
+
+        .empty {
+            background: #111b30;
+            padding: 25px;
+            border-radius: 12px;
+            color: #aab8ce;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px;
+            margin: 30px 0;
+        }
+
+        .stat-card {
+            background: #111b30;
+            border: 1px solid #243957;
+            border-radius: 12px;
+            padding: 22px;
+        }
+
+        .stat-card h3 {
+            color: #91a2bd;
+            font-size: 14px;
+            margin: 0 0 12px;
+        }
+
+        .stat-card p {
+            color: #4da6ff;
+            font-size: 32px;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .search-box {
+            margin: 25px 0;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 15px;
+            background: #111b30;
+            border: 1px solid #29466b;
+            border-radius: 9px;
+            color: white;
+            font-size: 15px;
+            outline: none;
+        }
+
+        .search-box input:focus {
+            border-color: #4da6ff;
+        }
+
+        .search-box input::placeholder {
+            color: #91a2bd;
+        }
+
+        .filter-box {
+            display: inline-block;
+            margin-right: 12px;
+            margin-bottom: 12px;
+        }
+
+        .filter-box select {
+            min-width: 170px;
+        }
+
+        @media (max-width: 750px) {
+            body {
+                padding: 25px 5%;
+            }
+
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            header {
+                flex-wrap: wrap;
+                gap: 15px;
+            }
+
+            .header-buttons {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <div class="logo">CivicEye.</div>
+
+    <div class="header-buttons">
+        <a href="/" class="back">← Back to Home</a>
+
+        <form action="/logout" method="POST">
+            <button type="submit" class="logout-button">
+                Logout
+            </button>
+        </form>
+    </div>
+</header>
+
+<h1>Admin Dashboard</h1>
+
+<div class="stats">
+
+    <div class="stat-card">
+        <h3>Total Reports</h3>
+        <p>{{ total_reports }}</p>
+    </div>
+
+    <div class="stat-card">
+        <h3>Pending</h3>
+        <p>{{ pending_reports }}</p>
+    </div>
+
+    <div class="stat-card">
+        <h3>In Progress</h3>
+        <p>{{ progress_reports }}</p>
+    </div>
+
+    <div class="stat-card">
+        <h3>Resolved</h3>
+        <p>{{ resolved_reports }}</p>
+    </div>
+
+</div>
+
+<p class="subtitle">Manage and update community reports.</p>
+
+<div class="search-box">
+    <input
+        type="text"
+        id="reportSearch"
+        placeholder="Search by report title or location..."
+        onkeyup="searchReports()"
+    >
+</div>
+
+<div class="filter-box">
+    <select id="statusFilter" onchange="filterReports()">
+        <option value="all">All Statuses</option>
+        <option value="Pending">Pending</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Resolved">Resolved</option>
+    </select>
+</div>
+
+<div class="filter-box">
+    <select id="categoryFilter" onchange="filterReports()">
+        <option value="all">All Categories</option>
+        <option value="Road Damage">Road Damage</option>
+        <option value="Waste Management">Waste Management</option>
+        <option value="Street Lighting">Street Lighting</option>
+        <option value="Water Supply">Water Supply</option>
+        <option value="Drainage">Drainage</option>
+        <option value="Other">Other</option>
+    </select>
+</div>
+
+{% for report in reports %}
+
+<div class="report">
+
+    <h2>{{ report.title }}</h2>
+
+    <div class="details">
+        <p><strong>Category:</strong> {{ report.category }}</p>
+
+        <p><strong>Location:</strong> {{ report.location }}</p>
+
+        <p><strong>Description:</strong> {{ report.description }}</p>
+
+        <p><strong>Report ID:</strong> #{{ report.id }}</p>
+
+        <p>
+            <strong>Current Status:</strong>
+            <span class="status">{{ report.status }}</span>
+        </p>
+    </div>
+
+    <form
+        action="{{ url_for('update_status', report_id=report.id) }}"
+        method="POST"
+    >
+        <label>Update Status:</label><br>
+
+        <select name="status">
+            <option value="Pending"
+                {% if report.status == "Pending" %}selected{% endif %}>
+                Pending
+            </option>
+
+            <option value="In Progress"
+                {% if report.status == "In Progress" %}selected{% endif %}>
+                In Progress
+            </option>
+
+            <option value="Resolved"
+                {% if report.status == "Resolved" %}selected{% endif %}>
+                Resolved
+            </option>
+        </select>
+
+        <button type="submit">Update Status</button>
+    </form>
+
+    <form
+        action="{{ url_for('delete_report', report_id=report.id) }}"
+        method="POST"
+        onsubmit="return confirm('Are you sure you want to permanently delete this report?');"
+    >
+        <button type="submit" class="delete-button">
+            Delete Report
+        </button>
+    </form>
+
+</div>
+
+{% else %}
+
+<div class="empty">
+    No reports available.
+</div>
+
+{% endfor %}
+
+<script>
+    function applyFilters() {
+        const searchInput = document.getElementById("reportSearch");
+        const statusFilter = document.getElementById("statusFilter");
+        const categoryFilter = document.getElementById("categoryFilter");
+
+        const searchText = searchInput.value.toLowerCase();
+        const selectedStatus = statusFilter.value;
+        const selectedCategory = categoryFilter.value;
+
+        const reports = document.querySelectorAll(".report");
+
+        reports.forEach(function(report) {
+            const reportText = report.textContent.toLowerCase();
+
+            const matchesSearch = reportText.includes(searchText);
+
+            const matchesStatus =
+                selectedStatus === "all" ||
+                reportText.includes(selectedStatus.toLowerCase());
+
+            const matchesCategory =
+                selectedCategory === "all" ||
+                reportText.includes(selectedCategory.toLowerCase());
+
+            if (matchesSearch && matchesStatus && matchesCategory) {
+                report.style.display = "";
+            } else {
+                report.style.display = "none";
+            }
+        });
+    }
+
+    function searchReports() {
+        applyFilters();
+    }
+
+    function filterReports() {
+        applyFilters();
+    }
+</script>
+
+</body>
+</html>

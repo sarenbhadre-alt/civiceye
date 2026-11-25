@@ -1,0 +1,384 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CivicEye | Report an Issue</title>
+
+    <!-- Leaflet Map -->
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    >
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 40px 7%;
+            background: #080d1a;
+            color: #e8eefb;
+            font-family: Arial, sans-serif;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 35px;
+        }
+
+        .logo {
+            color: #4da6ff;
+            font-size: 25px;
+            font-weight: bold;
+        }
+
+        a {
+            color: #4da6ff;
+            text-decoration: none;
+        }
+
+        .back {
+            border: 1px solid #29466b;
+            padding: 11px 18px;
+            border-radius: 8px;
+        }
+
+        h1 {
+            font-size: 36px;
+        }
+
+        .subtitle {
+            color: #91a2bd;
+            margin-bottom: 30px;
+        }
+
+        .form-container {
+            max-width: 650px;
+            background: #111b30;
+            border: 1px solid #243957;
+            border-radius: 14px;
+            padding: 30px;
+        }
+
+        label {
+            display: block;
+            margin: 18px 0 9px;
+            font-weight: bold;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 13px;
+            border-radius: 8px;
+            border: 1px solid #29466b;
+            background: #080d1a;
+            color: white;
+            font-size: 15px;
+        }
+
+        textarea {
+            min-height: 130px;
+            resize: vertical;
+        }
+
+        button {
+            margin-top: 25px;
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            background: #2589ed;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1472d0;
+        }
+
+        .location-button {
+            margin-top: 10px;
+            background: #17446d;
+            border: 1px solid #2877a8;
+        }
+
+        .location-button:hover {
+            background: #205b8e;
+        }
+
+        #locationMessage {
+            color: #91a2bd;
+            font-size: 13px;
+            margin-top: 12px;
+            line-height: 1.6;
+        }
+
+        #map {
+            display: none;
+            width: 100%;
+            height: 320px;
+            margin-top: 18px;
+            border-radius: 10px;
+            border: 1px solid #29466b;
+            z-index: 1;
+        }
+
+        .coordinates {
+            display: none;
+            color: #38bdf8;
+            font-size: 13px;
+            margin-top: 12px;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 25px 5%;
+            }
+
+            header {
+                gap: 15px;
+                flex-wrap: wrap;
+            }
+
+            h1 {
+                font-size: 29px;
+            }
+
+            .form-container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <div class="logo">CivicEye.</div>
+    <a href="/" class="back">← Back to Home</a>
+</header>
+
+<h1>Report a Civic Issue</h1>
+
+<p class="subtitle">
+    Help improve your community by reporting problems in your area.
+</p>
+
+<div class="form-container">
+
+    <form action="/report" method="POST" enctype="multipart/form-data">
+
+        <label for="title">Issue Title</label>
+        <input
+            type="text"
+            id="title"
+            name="title"
+            placeholder="Example: Large pothole near main road"
+            required
+        >
+
+        <label for="category">Category</label>
+        <select id="category" name="category" required>
+            <option value="">Select a category</option>
+            <option value="Road Damage">Road Damage</option>
+            <option value="Waste Management">Waste Management</option>
+            <option value="Street Lighting">Street Lighting</option>
+            <option value="Water Supply">Water Supply</option>
+            <option value="Drainage">Drainage</option>
+            <option value="Other">Other</option>
+        </select>
+
+        <label for="location">Location / Area</label>
+        <input
+            type="text"
+            id="location"
+            name="location"
+            placeholder="Example: Indiranagar, Bengaluru"
+            required
+        >
+
+        <button
+            type="button"
+            class="location-button"
+            id="gpsButton"
+            onclick="getCurrentLocation()"
+        >
+            📍 Use My Current Location
+        </button>
+
+        <p id="locationMessage">
+            Allow location access to mark the exact issue location.
+        </p>
+
+        <div id="map"></div>
+
+        <p class="coordinates" id="coordinates"></p>
+
+        <input type="hidden" name="latitude" id="latitude">
+        <input type="hidden" name="longitude" id="longitude">
+
+        <label for="description">Description</label>
+        <textarea
+            id="description"
+            name="description"
+            placeholder="Describe the issue..."
+            required
+        ></textarea>
+
+        <label for="image">Upload an Image (Optional)</label>
+        <input
+            type="file"
+            id="image"
+            name="image"
+            accept=".png,.jpg,.jpeg,.webp"
+        >
+
+        <button type="submit">Submit Report</button>
+
+    </form>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+
+    let map;
+    let marker;
+
+    function getCurrentLocation() {
+
+        const message = document.getElementById("locationMessage");
+        const button = document.getElementById("gpsButton");
+
+        if (!navigator.geolocation) {
+            message.textContent =
+                "Your browser does not support location detection.";
+            return;
+        }
+
+        button.disabled = true;
+        button.textContent = "Detecting location...";
+
+        message.textContent =
+            "Waiting for location permission...";
+
+        navigator.geolocation.getCurrentPosition(
+
+            function(position) {
+
+                const latitude = position.coords.latitude;
+                const longitude = position.coords.longitude;
+
+                document.getElementById("latitude").value = latitude;
+                document.getElementById("longitude").value = longitude;
+
+                document.getElementById("coordinates").style.display = "block";
+                document.getElementById("coordinates").textContent =
+                    "Latitude: " + latitude.toFixed(6) +
+                    " | Longitude: " + longitude.toFixed(6);
+
+                document.getElementById("map").style.display = "block";
+
+                if (!map) {
+
+                    map = L.map("map").setView(
+                        [latitude, longitude], 17
+                    );
+
+                    L.tileLayer(
+                        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                        {
+                            attribution: '&copy; OpenStreetMap contributors'
+                        }
+                    ).addTo(map);
+
+                    marker = L.marker(
+                        [latitude, longitude],
+                        { draggable: true }
+                    ).addTo(map);
+
+                    marker.bindPopup(
+                        "Drag this pin to adjust the issue location."
+                    ).openPopup();
+
+                    marker.on("dragend", updateCoordinates);
+
+                    map.on("click", function(event) {
+                        marker.setLatLng(event.latlng);
+                        updateCoordinates();
+                    });
+
+                } else {
+
+                    map.setView([latitude, longitude], 17);
+                    marker.setLatLng([latitude, longitude]);
+
+                }
+
+                setTimeout(function() {
+                    map.invalidateSize();
+                }, 100);
+
+                message.textContent =
+                    "Location detected! You can drag the map pin to adjust it.";
+
+                button.textContent = "📍 Refresh My Location";
+                button.disabled = false;
+
+            },
+
+            function(error) {
+
+                if (error.code === 1) {
+                    message.textContent =
+                        "Location permission was denied. Allow location access in your browser settings.";
+                } else if (error.code === 2) {
+                    message.textContent =
+                        "Your location is currently unavailable. Try again.";
+                } else {
+                    message.textContent =
+                        "Location detection timed out. Please try again.";
+                }
+
+                button.textContent = "📍 Try Again";
+                button.disabled = false;
+
+            },
+
+            {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 0
+            }
+
+        );
+    }
+
+    function updateCoordinates() {
+
+        const position = marker.getLatLng();
+
+        document.getElementById("latitude").value = position.lat;
+        document.getElementById("longitude").value = position.lng;
+
+        document.getElementById("coordinates").textContent =
+            "Latitude: " + position.lat.toFixed(6) +
+            " | Longitude: " + position.lng.toFixed(6);
+
+        document.getElementById("locationMessage").textContent =
+            "Location updated successfully!";
+    }
+
+</script>
+
+</body>
+</html>
